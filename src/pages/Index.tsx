@@ -33,19 +33,16 @@ const Index = () => {
   const [productoEditando, setProductoEditando] = useState<Product | null>(null);
   const [mostrarAboutUs, setMostrarAboutUs] = useState(false);
 
-  // Abrir formulario para nuevo producto
   const abrirFormularioNuevo = () => {
     setProductoEditando(null);
     setMostrarFormulario(true);
   };
 
-  // Abrir formulario para editar
   const abrirFormularioEditar = (producto: Product) => {
     setProductoEditando(producto);
     setMostrarFormulario(true);
   };
 
-  // Cerrar formulario
   const cerrarFormulario = () => {
     setMostrarFormulario(false);
     setProductoEditando(null);
@@ -53,7 +50,6 @@ const Index = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Indicador de modo creador */}
       {modoCreador && (
         <div className="sticky top-0 z-40 bg-accent/90 px-4 py-2 text-center shadow-soft backdrop-blur-sm">
           <div className="container flex items-center justify-center gap-2">
@@ -65,7 +61,6 @@ const Index = () => {
         </div>
       )}
 
-      {/* Encabezado */}
       <Header
         modoCreador={modoCreador}
         logoUrl={logoUrl}
@@ -77,9 +72,7 @@ const Index = () => {
         onLogoPositionReset={resetearLogoPosition}
       />
 
-      {/* Contenido principal */}
       <main className="container flex-1 py-8">
-        {/* Barra de acciones */}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl font-semibold text-foreground">
@@ -93,7 +86,6 @@ const Index = () => {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {/* Botón Sobre Nosotros - visible para todos */}
             <Button
               variant="outline"
               onClick={() => setMostrarAboutUs(true)}
@@ -134,7 +126,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Estado de carga */}
         {cargando ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -142,13 +133,23 @@ const Index = () => {
         ) : productos.length === 0 ? (
           <EmptyState />
         ) : (
-          /* Galería de productos */
+          /* GALERÍA DE PRODUCTOS CON LOGO DE PRUEBA */
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {productos.map((producto, index) => (
               <div
                 key={producto.id}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
+
+                {/* LOGO DE PRUEBA */}
+                <div className="mb-2 flex justify-center">
+                  <img
+                    src="/logo.png"
+                    alt="Logo de prueba"
+                    className="h-12 w-auto"
+                  />
+                </div>
+
                 <ProductCard
                   producto={producto}
                   modoCreador={modoCreador}
@@ -161,13 +162,9 @@ const Index = () => {
         )}
       </main>
 
-      {/* Pie de página */}
       <Footer />
-
-      {/* Botón flotante de WhatsApp */}
       <WhatsAppButton />
 
-      {/* Modal de Sobre Nosotros */}
       <AboutUsModal
         isOpen={mostrarAboutUs}
         onClose={() => setMostrarAboutUs(false)}
@@ -176,7 +173,6 @@ const Index = () => {
         modoCreador={modoCreador}
       />
 
-      {/* Modal de contraseña */}
       {mostrarModal && (
         <PasswordModal
           onSubmit={verificarPassword}
@@ -185,7 +181,6 @@ const Index = () => {
         />
       )}
 
-      {/* Formulario de producto */}
       {mostrarFormulario && (
         <ProductForm
           onSubmit={agregarProducto}
@@ -199,3 +194,4 @@ const Index = () => {
 };
 
 export default Index;
+
