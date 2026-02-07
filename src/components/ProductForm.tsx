@@ -3,7 +3,7 @@ import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { isValidImageFile } from "@/utils/imageProcessor";
+import { isValidImageFile, processImage } from "@/utils/imageProcessor";
 import { Product } from "@/types/product";
 
 interface ProductFormProps {
@@ -48,9 +48,13 @@ const ProductForm = ({
     setProcesando(true);
 
     try {
-      const previewUrl = URL.createObjectURL(file);
+      // 
+      const optimizedFile = await processImage(file);
+
+      const previewUrl = URL.createObjectURL(optimizedFile);
       setImagenPreview(previewUrl);
-      setNuevaImagen(file);
+      setNuevaImagen(optimizedFile);
+
     } catch (err) {
       setError("Error al procesar la imagen.");
       console.error(err);
@@ -58,6 +62,7 @@ const ProductForm = ({
       setProcesando(false);
     }
   };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

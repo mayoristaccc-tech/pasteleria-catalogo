@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Product } from "@/types/product";
+import { MessageCircle } from "lucide-react";
 
 interface ProductCardProps {
   producto: Product;
@@ -21,6 +22,13 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
       // Auto-reset después de 3 segundos
       setTimeout(() => setConfirmandoEliminar(false), 3000);
     }
+  };
+  const compartirWhatsApp = () => {
+    const mensaje = `Hola! Te comparto este producto:%0A%0A*${producto.nombre}*%0A${producto.descripcion}%0A%0AVisítalo en nuestro catálogo:%0A${window.location.origin}`;
+
+    const url = `https://wa.me/?text=${mensaje}`;
+
+    window.open(url, "_blank");
   };
 
   return (
@@ -49,8 +57,8 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
             <button
               onClick={handleDelete}
               className={`rounded-full p-3 shadow-medium transition-all hover:scale-110 ${confirmandoEliminar
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-card text-foreground hover:bg-destructive hover:text-destructive-foreground"
+                ? "bg-destructive text-destructive-foreground"
+                : "bg-card text-foreground hover:bg-destructive hover:text-destructive-foreground"
                 }`}
               aria-label={
                 confirmandoEliminar
@@ -75,6 +83,17 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
             {producto.descripcion}
           </p>
         )}
+
+        {/* Botón compartir por WhatsApp */}
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={compartirWhatsApp}
+            className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Compartir
+          </button>
+        </div>
       </div>
 
       {/* Mensaje de confirmación */}
