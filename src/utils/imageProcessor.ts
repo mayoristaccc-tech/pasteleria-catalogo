@@ -1,22 +1,30 @@
 export const isValidImageFile = (file: File) => {
-  return [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif"
-  ].includes(file.type);
+  return file.type.startsWith("image/");
 };
 
-export const processImage = (file: File): Promise<File> => {
+export const processImage = async (file: File): Promise<File> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+
+    reader.onerror = () => reject("Error al leer archivo");
 
     reader.onload = (event) => {
       const img = new Image();
 
+      img.onerror = () => reject("Error al cargar imagen");
+
       img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          reject("No se pudo crear contexto de canvas");
+          return;
+        }
+
         const MAX_WIDTH = 1200;
         const MAX_HEIGHT = 1200;
+        const QUALITY = 0.80;
 
         let width = img.width;
         let height = img.height;
@@ -33,23 +41,21 @@ export const processImage = (file: File): Promise<File> => {
           }
         }
 
-        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
 
-        const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              reject(new Error("Error al procesar imagen"));
+              reject("Error al crear blob de imagen");
               return;
             }
 
             const optimizedFile = new File(
               [blob],
-              file.name.replace(/\.\w+$/, ".webp"),
+              file.name.replace(/\.[^/.]+$/, ".webp"),
               {
                 type: "image/webp",
                 lastModified: Date.now(),
@@ -59,15 +65,13 @@ export const processImage = (file: File): Promise<File> => {
             resolve(optimizedFile);
           },
           "image/webp",
-          0.8
+          QUALITY
         );
       };
 
-      img.onerror = () => reject(new Error("Error al cargar imagen"));
       img.src = event.target?.result as string;
     };
 
-    reader.onerror = () => reject(new Error("Error al leer archivo"));
     reader.readAsDataURL(file);
   });
 };

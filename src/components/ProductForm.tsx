@@ -40,7 +40,7 @@ const ProductForm = ({
     if (!file) return;
 
     if (!isValidImageFile(file)) {
-      setError("Por favor, selecciona una imagen válida (JPG, PNG, WEBP o GIF)");
+      setError("Por favor, selecciona una imagen válida");
       return;
     }
 
@@ -48,21 +48,19 @@ const ProductForm = ({
     setProcesando(true);
 
     try {
-      // 
-      const optimizedFile = await processImage(file);
+      const imagenOptimizada = await processImage(file);
 
-      const previewUrl = URL.createObjectURL(optimizedFile);
+      const previewUrl = URL.createObjectURL(imagenOptimizada);
+
       setImagenPreview(previewUrl);
-      setNuevaImagen(optimizedFile);
-
+      setNuevaImagen(imagenOptimizada);
     } catch (err) {
-      setError("Error al procesar la imagen.");
+      setError("Error al optimizar la imagen");
       console.error(err);
     } finally {
       setProcesando(false);
     }
   };
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
