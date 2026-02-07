@@ -12,13 +12,14 @@ export const useProducts = () => {
     setCargando(true);
 
     const { data, error } = await supabase
-      .from("productos")
+      .from("products")        //
       .select("*")
       .order("creado_en", { ascending: false });
 
     if (error) {
-      console.error("Error al cargar productos:", error);
-    } else {
+      console.error("Error al cargar productos:", JSON.stringify(error, null, 2));
+    }
+    else {
       setProductos(data || []);
     }
 
@@ -42,7 +43,7 @@ export const useProducts = () => {
       console.log("Intentando subir imagen con nombre:", fileName);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("productos")
+        .from("productos")      // 
         .upload(fileName, imagen);
 
       if (uploadError) {
@@ -61,7 +62,7 @@ export const useProducts = () => {
       console.log("URL pública generada:", imagenUrl);
 
       const { data: insertData, error: insertError } = await supabase
-        .from("productos")
+        .from("products")       //
         .insert([
           {
             nombre,
@@ -71,7 +72,7 @@ export const useProducts = () => {
         ]);
 
       if (insertError) {
-        console.error("ERROR AL GUARDAR EN TABLA:", insertError);
+        console.error("ERROR AL GUARDAR EN TABLA:", JSON.stringify(insertError, null, 2));
         return;
       }
 
