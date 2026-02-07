@@ -1,92 +1,91 @@
 import { useState, useEffect } from "react";
-import { Product, generateId } from "@/types/product";
-import { sampleProducts } from "@/data/sampleProducts";
+import { Product } from "@/types/product";
+import { supabase } from "../lib/supabase";
 
-// Clave para localStorage
-const STORAGE_KEY = "dolcce_vitta_productos";
-const SAMPLES_LOADED_KEY = "dolcce_vitta_samples_loaded";
-
-// Hook personalizado para manejar productos con localStorage
 export const useProducts = () => {
+  console.log("useProducts montado");
+
   const [productos, setProductos] = useState<Product[]>([]);
   const [cargando, setCargando] = useState(true);
 
-  // Cargar productos desde localStorage al iniciar
-  useEffect(() => {
-    const productosGuardados = localStorage.getItem(STORAGE_KEY);
-    const samplesLoaded = localStorage.getItem(SAMPLES_LOADED_KEY);
-    
-    if (productosGuardados) {
-      try {
-        const parsed = JSON.parse(productosGuardados);
-        // Si hay productos guardados, usarlos
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setProductos(parsed);
-        } else if (!samplesLoaded) {
-          // Si el array está vacío y no se han cargado samples, cargarlos
-          setProductos(sampleProducts);
-          localStorage.setItem(SAMPLES_LOADED_KEY, "true");
-        }
-      } catch (error) {
-        console.error("Error al cargar productos:", error);
-        if (!samplesLoaded) {
-          setProductos(sampleProducts);
-          localStorage.setItem(SAMPLES_LOADED_KEY, "true");
-        }
-      }
-    } else if (!samplesLoaded) {
-      // Cargar productos de ejemplo si es la primera vez
-      setProductos(sampleProducts);
-      localStorage.setItem(SAMPLES_LOADED_KEY, "true");
+  const cargarProductos = async () => {
+    setCargando(true);
+
+    const { data, error } = await supabase
+      .from("productos")
+      .select("*")
+      .order("creado_en", { ascending: false });
+
+    if (error) {
+      console.error("Error al cargar productos:", error);
+    } else {
+      setProductos(data || []);
     }
+
     setCargando(false);
+  };
+
+  useEffect(() => {
+    cargarProductos();
   }, []);
 
-  // Guardar productos en localStorage cuando cambien
-  useEffect(() => {
-    if (!cargando) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(productos));
+  const agregarProducto = async (
+    nombre: string,
+    descripcion: string,
+    imagen: File
+  ) => {
+    console.log("Iniciando subida de producto...");
+    console.log("Datos recibidos:", { nombre, descripcion, imagen });
+
+    try {
+      const fileName = `${Date.now()}-${imagen.name}`;
+      console.log("Intentando subir imagen con nombre:", fileName);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("productos")
+        .upload(fileName, imagen);
+
+      if (uploadError) {
+        console.error("ERROR AL SUBIR IMAGEN:", uploadError);
+        return;
+      }
+
+      console.log("Imagen subida correctamente:", uploadData);
+
+      const { data: urlData } = supabase.storage
+        .from("productos")
+        .getPublicUrl(fileName);
+
+      const imagenUrl = urlData.publicUrl;
+
+      console.log("URL pública generada:", imagenUrl);
+
+      const { data: insertData, error: insertError } = await supabase
+        .from("productos")
+        .insert([
+          {
+            nombre,
+            descripcion,
+            imagen_url: imagenUrl,
+          },
+        ]);
+
+      if (insertError) {
+        console.error("ERROR AL GUARDAR EN TABLA:", insertError);
+        return;
+      }
+
+      console.log("Producto guardado en base de datos:", insertData);
+
+      await cargarProductos();
+    } catch (err) {
+      console.error("ERROR GENERAL:", err);
     }
-  }, [productos, cargando]);
-
-  // Agregar un nuevo producto
-  const agregarProducto = (nombre: string, descripcion: string, imagen: string) => {
-    const nuevoProducto: Product = {
-      id: generateId(),
-      nombre,
-      descripcion,
-      imagen,
-      fechaCreacion: Date.now(),
-    };
-    setProductos((prev) => [nuevoProducto, ...prev]);
-  };
-
-  // Editar un producto existente
-  const editarProducto = (id: string, nombre: string, descripcion: string, imagen?: string) => {
-    setProductos((prev) =>
-      prev.map((producto) =>
-        producto.id === id
-          ? {
-              ...producto,
-              nombre,
-              descripcion,
-              ...(imagen && { imagen }),
-            }
-          : producto
-      )
-    );
-  };
-
-  // Eliminar un producto
-  const eliminarProducto = (id: string) => {
-    setProductos((prev) => prev.filter((producto) => producto.id !== id));
   };
 
   return {
     productos,
     cargando,
     agregarProducto,
-    editarProducto,
-    eliminarProducto,
   };
 };

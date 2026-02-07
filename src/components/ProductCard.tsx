@@ -11,6 +11,7 @@ interface ProductCardProps {
 
 const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardProps) => {
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
+  const [imagenError, setImagenError] = useState(false);
 
   const handleDelete = () => {
     if (confirmandoEliminar) {
@@ -27,12 +28,13 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
       {/* Imagen del producto */}
       <div className="relative aspect-square overflow-hidden bg-secondary">
         <img
-          src={producto.imagen}
+          src={imagenError ? "/placeholder.png" : producto.imagen_url}
           alt={producto.nombre}
+          onError={() => setImagenError(true)}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        
+
         {/* Overlay con botones de edición (solo en modo creador) */}
         {modoCreador && (
           <div className="absolute inset-0 flex items-center justify-center gap-3 bg-foreground/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -43,14 +45,18 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
             >
               <Pencil className="h-5 w-5" />
             </button>
+
             <button
               onClick={handleDelete}
-              className={`rounded-full p-3 shadow-medium transition-all hover:scale-110 ${
-                confirmandoEliminar
+              className={`rounded-full p-3 shadow-medium transition-all hover:scale-110 ${confirmandoEliminar
                   ? "bg-destructive text-destructive-foreground"
                   : "bg-card text-foreground hover:bg-destructive hover:text-destructive-foreground"
-              }`}
-              aria-label={confirmandoEliminar ? "Confirmar eliminación" : "Eliminar producto"}
+                }`}
+              aria-label={
+                confirmandoEliminar
+                  ? "Confirmar eliminación"
+                  : "Eliminar producto"
+              }
             >
               <Trash2 className="h-5 w-5" />
             </button>
@@ -63,6 +69,7 @@ const ProductCard = ({ producto, modoCreador, onEdit, onDelete }: ProductCardPro
         <h3 className="font-display text-lg font-semibold text-foreground line-clamp-2">
           {producto.nombre}
         </h3>
+
         {producto.descripcion && (
           <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
             {producto.descripcion}

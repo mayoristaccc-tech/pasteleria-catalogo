@@ -1,35 +1,44 @@
 import { useState, useRef, ChangeEvent } from "react";
-import { X, Upload, Image } from "lucide-react";
+import { X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { processImage, isValidImageFile } from "@/utils/imageProcessor";
+import { isValidImageFile } from "@/utils/imageProcessor";
 import { Product } from "@/types/product";
 
 interface ProductFormProps {
-  onSubmit: (nombre: string, descripcion: string, imagen: string) => void;
+  onSubmit: (nombre: string, descripcion: string, imagen: File) => void;
   onClose: () => void;
   productoEditar?: Product;
-  onUpdate?: (id: string, nombre: string, descripcion: string, imagen?: string) => void;
+  onUpdate?: (id: string, nombre: string, descripcion: string, imagen?: File) => void;
 }
 
-const ProductForm = ({ onSubmit, onClose, productoEditar, onUpdate }: ProductFormProps) => {
+const ProductForm = ({
+  onSubmit,
+  onClose,
+  productoEditar,
+  onUpdate,
+}: ProductFormProps) => {
   const [nombre, setNombre] = useState(productoEditar?.nombre || "");
-  const [descripcion, setDescripcion] = useState(productoEditar?.descripcion || "");
-  const [imagenPreview, setImagenPreview] = useState<string | null>(productoEditar?.imagen || null);
-  const [nuevaImagen, setNuevaImagen] = useState<string | null>(null);
+  const [descripcion, setDescripcion] = useState(
+    productoEditar?.descripcion || ""
+  );
+  const [imagenPreview, setImagenPreview] = useState<string | null>(
+    productoEditar?.imagen_url || null
+  );
+  const [nuevaImagen, setNuevaImagen] = useState<File | null>(null);
+
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState("");
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const esEdicion = !!productoEditar;
 
-  // Manejar selección de imagen
   const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de archivo
     if (!isValidImageFile(file)) {
       setError("Por favor, selecciona una imagen válida (JPG, PNG, WEBP o GIF)");
       return;
@@ -39,19 +48,17 @@ const ProductForm = ({ onSubmit, onClose, productoEditar, onUpdate }: ProductFor
     setProcesando(true);
 
     try {
-      // Procesar y mejorar la imagen
-      const imagenProcesada = await processImage(file);
-      setImagenPreview(imagenProcesada);
-      setNuevaImagen(imagenProcesada);
+      const previewUrl = URL.createObjectURL(file);
+      setImagenPreview(previewUrl);
+      setNuevaImagen(file);
     } catch (err) {
-      setError("Error al procesar la imagen. Intenta con otra.");
+      setError("Error al procesar la imagen.");
       console.error(err);
     } finally {
       setProcesando(false);
     }
   };
 
-  // Manejar envío del formulario
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -60,15 +67,20 @@ const ProductForm = ({ onSubmit, onClose, productoEditar, onUpdate }: ProductFor
       return;
     }
 
-    if (!esEdicion && !imagenPreview) {
+    if (!esEdicion && !nuevaImagen) {
       setError("Debes subir una imagen del producto");
       return;
     }
 
     if (esEdicion && onUpdate) {
-      onUpdate(productoEditar.id, nombre.trim(), descripcion.trim(), nuevaImagen || undefined);
-    } else if (imagenPreview) {
-      onSubmit(nombre.trim(), descripcion.trim(), imagenPreview);
+      onUpdate(
+        productoEditar!.id,
+        nombre.trim(),
+        descripcion.trim(),
+        nuevaImagen || undefined
+      );
+    } else if (nuevaImagen) {
+      onSubmit(nombre.trim(), descripcion.trim(), nuevaImagen);
     }
 
     onClose();
@@ -77,127 +89,80 @@ const ProductForm = ({ onSubmit, onClose, productoEditar, onUpdate }: ProductFor
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30 backdrop-blur-sm p-4">
       <div className="w-full max-w-md animate-scale-in rounded-2xl bg-card p-6 shadow-elevated">
-        {/* Encabezado */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="font-display text-2xl font-semibold text-foreground">
+          <h2 className="text-xl font-semibold">
             {esEdicion ? "Editar Producto" : "Nuevo Producto"}
           </h2>
-          <button
-            onClick={onClose}
-            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Cerrar"
-          >
+
+          <button onClick={onClose}>
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Subir imagen */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground">
+            <label className="mb-2 block text-sm font-medium">
               Imagen del producto
             </label>
+
             <div
               onClick={() => inputRef.current?.click()}
-              className="group relative cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-primary/30 bg-secondary/30 transition-all hover:border-primary hover:bg-secondary/50"
+              className="cursor-pointer border-2 border-dashed rounded-lg p-4 text-center"
             >
               {imagenPreview ? (
-                <div className="relative aspect-video">
-                  <img
-                    src={imagenPreview}
-                    alt="Vista previa"
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="rounded-lg bg-card px-3 py-2 text-sm font-medium text-foreground">
-                      Cambiar imagen
-                    </span>
-                  </div>
-                </div>
+                <img
+                  src={imagenPreview}
+                  alt="Vista previa"
+                  className="mx-auto max-h-40 object-cover"
+                />
               ) : (
-                <div className="flex aspect-video flex-col items-center justify-center gap-3 p-6">
-                  {procesando ? (
-                    <>
-                      <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                      <span className="text-sm text-muted-foreground">Mejorando imagen...</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="rounded-full bg-primary/20 p-4">
-                        <Upload className="h-8 w-8 text-primary" />
-                      </div>
-                      <div className="text-center">
-                        <span className="font-medium text-foreground">Subir imagen</span>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          JPG, PNG o WEBP • Se mejorará automáticamente
-                        </p>
-                      </div>
-                    </>
-                  )}
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="h-6 w-6" />
+                  <span>Subir imagen</span>
                 </div>
               )}
+
               <input
                 ref={inputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept="image/*"
                 onChange={handleImageChange}
                 className="hidden"
               />
             </div>
           </div>
 
-          {/* Nombre del producto */}
           <div>
-            <label htmlFor="nombre" className="mb-2 block text-sm font-medium text-foreground">
+            <label className="mb-2 block text-sm font-medium">
               Nombre del producto
             </label>
             <Input
-              id="nombre"
-              type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej: Pastel de Tres Leches"
-              className="border-border bg-card"
-              maxLength={60}
+              placeholder="Ej: Pastel de chocolate"
             />
           </div>
 
-          {/* Descripción */}
           <div>
-            <label htmlFor="descripcion" className="mb-2 block text-sm font-medium text-foreground">
-              Descripción corta
+            <label className="mb-2 block text-sm font-medium">
+              Descripción
             </label>
             <Textarea
-              id="descripcion"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="Ej: Suave bizcocho bañado en tres leches con crema batida"
-              className="min-h-[80px] border-border bg-card resize-none"
-              maxLength={150}
+              placeholder="Descripción del producto"
             />
           </div>
 
-          {/* Error */}
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
-          {/* Botones */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1"
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={procesando}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {esEdicion ? "Guardar Cambios" : "Agregar Producto"}
+
+            <Button type="submit" disabled={procesando}>
+              {esEdicion ? "Guardar cambios" : "Crear producto"}
             </Button>
           </div>
         </form>
