@@ -13,13 +13,16 @@ import LoginModal from "../components/LoginModal";
 import { Button } from "../components/ui/button";
 
 import { useProducts } from "../hooks/useProducts";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthContext } from "../context/AuthContext";
 import { useAboutUs } from "../hooks/useAboutUs";
 import { useSiteConfig } from "../hooks/useSiteConfig";
 
 import { Product } from "../types/product";
 
 const Index = () => {
+
+  const { isAuthenticated, logout, loading: authLoading } = useAuthContext();
+
   const {
     productos,
     cargando,
@@ -28,7 +31,20 @@ const Index = () => {
     eliminarProducto,
   } = useProducts();
 
-  const { isAuthenticated, login, logout } = useAuth();
+  const [busqueda, setBusqueda] = useState("");
+  const [orden, setOrden] = useState<"desc" | "asc">("desc");
+
+  const productosFiltrados = productos
+    .filter((producto) => {
+      const texto = `${producto.nombre} ${producto.descripcion}`.toLowerCase();
+      return texto.includes(busqueda.toLowerCase());
+    })
+    .sort((a, b) => {
+      const fechaA = new Date(a.creado_en || "").getTime();
+      const fechaB = new Date(b.creado_en || "").getTime();
+
+      return orden === "desc" ? fechaB - fechaA : fechaA - fechaB;
+    });
 
   const { aboutText, guardarAboutText } = useAboutUs();
 
@@ -47,23 +63,17 @@ const Index = () => {
   const [mostrarAboutUs, setMostrarAboutUs] = useState(false);
   const [mostrarLogin, setMostrarLogin] = useState(false);
 
-  const abrirFormularioNuevo = () => {
-    setProductoEditando(null);
-    setMostrarFormulario(true);
-  };
-
-  const abrirFormularioEditar = (producto: Product) => {
-    setProductoEditando(producto);
-    setMostrarFormulario(true);
-  };
-
-  const cerrarFormulario = () => {
-    setMostrarFormulario(false);
-    setProductoEditando(null);
-  };
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+
       {isAuthenticated && (
         <div className="sticky top-0 z-40 bg-accent/90 px-4 py-2 text-center shadow-soft backdrop-blur-sm">
           <div className="container flex items-center justify-center gap-2">
@@ -87,14 +97,31 @@ const Index = () => {
       />
 
       <main className="container flex-1 py-8">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="font-display text-2xl font-semibold text-foreground">
-              Nuestros Productos
-            </h2>
-          </div>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+
+          <h2 className="font-display text-2xl font-semibold text-foreground">
+            Nuestros Productos
+          </h2>
+
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="border rounded-lg px-3 py-2 w-full md:w-64"
+          />
+
+          <select
+            value={orden}
+            onChange={(e) => setOrden(e.target.value as "asc" | "desc")}
+            className="border rounded-lg px-3 py-2 w-full md:w-48"
+          >
+            <option value="desc">Más recientes primero</option>
+            <option value="asc">Más antiguos primero</option>
+          </select>
 
           <div className="flex flex-wrap gap-3">
+
             <Button
               variant="outline"
               onClick={() => setMostrarAboutUs(true)}
@@ -106,7 +133,7 @@ const Index = () => {
 
             {isAuthenticated ? (
               <>
-                <Button onClick={abrirFormularioNuevo} className="gap-2">
+                <Button onClick={() => setMostrarFormulario(true)} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Agregar Producto
                 </Button>
@@ -137,18 +164,14 @@ const Index = () => {
           <EmptyState />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {productos.map((producto, index) => (
-              <div
+            {productosFiltrados.map((producto) => (
+              <ProductCard
                 key={producto.id}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <ProductCard
-                  producto={producto}
-                  modoCreador={isAuthenticated}
-                  onEdit={abrirFormularioEditar}
-                  onDelete={eliminarProducto}
-                />
-              </div>
+                producto={producto}
+                modoCreador={isAuthenticated}
+                onEdit={() => setProductoEditando(producto)}
+                onDelete={eliminarProducto}
+              />
             ))}
           </div>
         )}
@@ -156,6 +179,22 @@ const Index = () => {
 
       <Footer />
       <WhatsAppButton />
+
+      {/* MODALES */}
+      {mostrarLogin && (
+        <LoginModal
+          onClose={() => setMostrarLogin(false)}
+        />
+      )}
+
+      {mostrarFormulario && (
+        <ProductForm
+          onSubmit={agregarProducto}
+          onClose={() => setMostrarFormulario(false)}
+          productoEditar={productoEditando || undefined}
+          onUpdate={editarProducto}
+        />
+      )}
 
       <AboutUsModal
         isOpen={mostrarAboutUs}
@@ -165,21 +204,6 @@ const Index = () => {
         modoCreador={isAuthenticated}
       />
 
-      {mostrarLogin && (
-        <LoginModal
-          onLogin={login}
-          onClose={() => setMostrarLogin(false)}
-        />
-      )}
-
-      {mostrarFormulario && (
-        <ProductForm
-          onSubmit={agregarProducto}
-          onClose={cerrarFormulario}
-          productoEditar={productoEditando || undefined}
-          onUpdate={editarProducto}
-        />
-      )}
     </div>
   );
 };

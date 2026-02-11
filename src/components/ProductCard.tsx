@@ -27,22 +27,35 @@ const ProductCard = ({
     }
   };
 
-  const compartirPorWhatsApp = () => {
-    const mensaje =
-      `Hola! Te comparto este producto:%0A%0A` +
-      `🧁 *${producto.nombre}*%0A` +
-      `${producto.descripcion || ""}%0A%0A` +
-      `Míralo en nuestro catálogo:%0A` +
-      `${window.location.origin}`;
+  const compartirWhatsApp = () => {
+    const TU_NUMERO = "541153790146";
 
-    const url = `https://wa.me/?text=${mensaje}`;
+    const mensajePlano = [
+      "Hola! Quiero consultar por este producto:",
+      "",
+      `🧁 ${producto.nombre}`,
+      producto.descripcion || "",
+      "",
+      "Míralo en nuestro catálogo:",
+      window.location.origin,
+      "",
+      "¿Podrían darme más información?"
+    ].join("\n");
 
-    window.open(url, "_blank");
+    const mensajeCodificado = encodeURIComponent(mensajePlano);
+
+    const url = `https://api.whatsapp.com/send?phone=${TU_NUMERO}&text=${mensajeCodificado}`;
+
+    if (process.env.NODE_ENV === "development") {
+      window.open(url, "_blank");
+    } else {
+      window.location.href = url;
+    }
   };
+
 
   return (
     <article className="group animate-fade-in overflow-hidden rounded-2xl bg-card shadow-soft transition-all duration-300 hover:shadow-medium hover:-translate-y-1">
-      {/* Imagen del producto */}
       <div className="relative aspect-square overflow-hidden bg-secondary">
         <img
           src={imagenError ? "/placeholder.png" : producto.imagen_url}
@@ -52,7 +65,6 @@ const ProductCard = ({
           loading="lazy"
         />
 
-        {/* Overlay con botones de edición (solo en modo creador) */}
         {modoCreador && (
           <div className="absolute inset-0 flex items-center justify-center gap-3 bg-foreground/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             <button
@@ -66,8 +78,8 @@ const ProductCard = ({
             <button
               onClick={handleDelete}
               className={`rounded-full p-3 shadow-medium transition-all hover:scale-110 ${confirmandoEliminar
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-card text-foreground hover:bg-destructive hover:text-destructive-foreground"
+                ? "bg-destructive text-destructive-foreground"
+                : "bg-card text-foreground hover:bg-destructive hover:text-destructive-foreground"
                 }`}
               aria-label={
                 confirmandoEliminar
@@ -81,7 +93,6 @@ const ProductCard = ({
         )}
       </div>
 
-      {/* Información del producto */}
       <div className="p-5">
         <h3 className="font-display text-lg font-semibold text-foreground line-clamp-2">
           {producto.nombre}
@@ -93,10 +104,9 @@ const ProductCard = ({
           </p>
         )}
 
-        {/* Botón compartir por WhatsApp */}
         <div className="mt-4 flex justify-end">
           <button
-            onClick={compartirPorWhatsApp}
+            onClick={compartirWhatsApp}
             className="flex items-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-green-700"
           >
             <Share2 className="h-4 w-4" />
@@ -105,7 +115,6 @@ const ProductCard = ({
         </div>
       </div>
 
-      {/* Mensaje de confirmación */}
       {confirmandoEliminar && (
         <div className="border-t border-border bg-destructive/10 px-5 py-2">
           <p className="text-center text-xs text-destructive">

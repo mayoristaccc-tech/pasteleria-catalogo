@@ -1,71 +1,72 @@
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { useAuthContext } from "../context/AuthContext";
 
 interface Props {
-    onLogin: (email: string, password: string) => Promise<any>;
-    onClose: () => void;
+  onClose: () => void;
 }
 
-const LoginModal = ({ onLogin, onClose }: Props) => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+const LoginModal = ({ onClose }: Props) => {
+  const { login } = useAuthContext();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-        const err = await onLogin(email, password);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-        if (err) {
-            setError("Credenciales incorrectas");
-        } else {
-            onClose();
-        }
-    };
+    const result = await login(email, password);
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
-                <h2 className="mb-4 text-lg font-semibold">
-                    Acceso Administrador
-                </h2>
+    if (result?.error) {
+      setError("Credenciales incorrectas");
+    } else {
+      onClose();
+    }
+  };
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-lg">
+        <h2 className="mb-4 text-lg font-semibold">
+          Acceso Administrador
+        </h2>
 
-                    <Input
-                        type="password"
-                        placeholder="Contraseña"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
-                    {error && (
-                        <p className="text-sm text-red-500">
-                            {error}
-                        </p>
-                    )}
+          <Input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-                    <div className="flex gap-2">
-                        <Button type="submit">
-                            Ingresar
-                        </Button>
+          {error && (
+            <p className="text-sm text-red-500">
+              {error}
+            </p>
+          )}
 
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancelar
-                        </Button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
+          <div className="flex gap-2">
+            <Button type="submit">
+              Ingresar
+            </Button>
+
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default LoginModal;
-
