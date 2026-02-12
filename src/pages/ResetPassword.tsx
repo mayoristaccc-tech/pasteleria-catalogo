@@ -1,14 +1,38 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
 const ResetPassword = () => {
+  const navigate = useNavigate();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [ready, setReady] = useState(false);
+
+  // 🔑 Paso CLAVE: intercambiar el code del email por una sesión válida
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    if (!code) {
+      setError("El enlace es inválido o ha expirado.");
+      return;
+    }
+
+    supabase.auth
+      .exchangeCodeForSession(code)
+      .then(({ error }) => {
+        if (error) {
+          setError("El enlace es inválido o ya fue utilizado.");
+        } else {
+          setReady(true);
+        }
+      });
+  }, []);
 
   const validar = () => {
     if (!password || !confirmPassword) {
@@ -31,7 +55,6 @@ const ResetPassword = () => {
 
   const cambiarClave = async () => {
     setError("");
-    setSuccess("");
 
     if (!validar()) return;
 
@@ -39,18 +62,20 @@ const ResetPassword = () => {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: password,
+        password,
       });
 
       if (error) {
-        setError(error.message || "Error al actualizar la contraseña");
+        setError(error.message);
         setLoading(false);
         return;
       }
 
-      setSuccess("Contraseña actualizada correctamente 🎉");
-      setPassword("");
-      setConfirmPassword("");
+      // Limpiamos sesión temporal
+      await supabase.auth.signOut();
+
+      alert("Contraseña actualizada correctamente. Ahora podés iniciar sesión.");
+      navigate("/");
 
     } catch (err: any) {
       setError(err.message || "Ocurrió un error inesperado");
@@ -67,50 +92,46 @@ const ResetPassword = () => {
           Crear nueva contraseña
         </h2>
 
-        <p className="text-sm text-gray-600 mb-4 text-center">
-          Define la contraseña que usarás para ingresar como administrador
-        </p>
-
-        <Input
-          type="password"
-          placeholder="Nueva contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-3"
-        />
-
-        <Input
-          type="password"
-          placeholder="Confirmar contraseña"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="mb-3"
-        />
-
-        {error && (
-          <p className="text-red-600 text-sm mb-3 text-center">
-            {error}
+        {!ready ? (
+          <p className="text-center text-sm text-gray-600">
+            Validando enlace...
           </p>
-        )}
+        ) : (
+          <>
+            <p className="text-sm text-gray-600 mb-4 text-center">
+              Definí la contraseña con la que vas a ingresar al sistema
+            </p>
 
-        {success && (
-          <p className="text-green-600 text-sm mb-3 text-center">
-            {success}
-          </p>
-        )}
+            <Input
+              type="password"
+              placeholder="Nueva contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mb-3"
+            />
 
-        <Button
-          className="w-full"
-          onClick={cambiarClave}
-          disabled={loading}
-        >
-          {loading ? "Actualizando..." : "Guardar contraseña"}
-        </Button>
+            <Input
+              type="password"
+              placeholder="Confirmar contraseña"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mb-3"
+            />
 
-        {success && (
-          <div className="mt-4 text-center text-sm text-gray-600">
-            Ya puedes cerrar esta ventana e iniciar sesión normalmente.
-          </div>
+            {error && (
+              <p className="text-red-600 text-sm mb-3 text-center">
+                {error}
+              </p>
+            )}
+
+            <Button
+              className="w-full"
+              onClick={cambiarClave}
+              disabled={loading}
+            >
+              {loading ? "Actualizando..." : "Guardar contraseña"}
+            </Button>
+          </>
         )}
       </div>
     </div>

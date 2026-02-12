@@ -14,6 +14,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import { AuthProvider } from "./context/AuthContext";
 import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/producto/:id" element={<ProductDetail />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Rutas admin */}
             <Route
