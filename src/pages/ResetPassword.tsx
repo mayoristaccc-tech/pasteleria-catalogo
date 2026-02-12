@@ -8,131 +8,93 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [ready, setReady] = useState(false);
 
-  // 🔑 Paso CLAVE: intercambiar el code del email por una sesión válida
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
     if (!code) {
-      setError("El enlace es inválido o ha expirado.");
+      setError("El enlace es inválido o expiró.");
+      setLoading(false);
       return;
     }
 
-    supabase.auth
-      .exchangeCodeForSession(code)
-      .then(({ error }) => {
-        if (error) {
-          setError("El enlace es inválido o ya fue utilizado.");
-        } else {
-          setReady(true);
-        }
-      });
+    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      if (error) {
+        setError("El enlace ya fue utilizado o expiró.");
+      }
+      setLoading(false);
+    });
   }, []);
 
-  const validar = () => {
-    if (!password || !confirmPassword) {
-      setError("Debes completar ambos campos");
-      return false;
-    }
-
-    if (password.length < 6) {
-      setError("La contraseña debe tener al menos 6 caracteres");
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      return false;
-    }
-
-    return true;
-  };
-
-  const cambiarClave = async () => {
+  const guardar = async () => {
     setError("");
 
-    if (!validar()) return;
-
-    setLoading(true);
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Limpiamos sesión temporal
-      await supabase.auth.signOut();
-
-      alert("Contraseña actualizada correctamente. Ahora podés iniciar sesión.");
-      navigate("/");
-
-    } catch (err: any) {
-      setError(err.message || "Ocurrió un error inesperado");
-    } finally {
-      setLoading(false);
+    if (!password || password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
     }
+
+    if (password !== confirm) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    await supabase.auth.signOut();
+    alert("Contraseña creada correctamente. Ahora podés iniciar sesión.");
+    navigate("/");
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Validando enlace...</p>
+      </div>
+    );
+  }
 
-        <h2 className="text-xl font-bold mb-4 text-center">
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="bg-white p-6 rounded-lg shadow w-full max-w-sm">
+        <h2 className="text-lg font-semibold mb-4 text-center">
           Crear nueva contraseña
         </h2>
 
-        {!ready ? (
-          <p className="text-center text-sm text-gray-600">
-            Validando enlace...
+        <Input
+          type="password"
+          placeholder="Nueva contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mb-3"
+        />
+
+        <Input
+          type="password"
+          placeholder="Confirmar contraseña"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          className="mb-3"
+        />
+
+        {error && (
+          <p className="text-red-600 text-sm mb-3 text-center">
+            {error}
           </p>
-        ) : (
-          <>
-            <p className="text-sm text-gray-600 mb-4 text-center">
-              Definí la contraseña con la que vas a ingresar al sistema
-            </p>
-
-            <Input
-              type="password"
-              placeholder="Nueva contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mb-3"
-            />
-
-            <Input
-              type="password"
-              placeholder="Confirmar contraseña"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mb-3"
-            />
-
-            {error && (
-              <p className="text-red-600 text-sm mb-3 text-center">
-                {error}
-              </p>
-            )}
-
-            <Button
-              className="w-full"
-              onClick={cambiarClave}
-              disabled={loading}
-            >
-              {loading ? "Actualizando..." : "Guardar contraseña"}
-            </Button>
-          </>
         )}
+
+        <Button className="w-full" onClick={guardar}>
+          Guardar contraseña
+        </Button>
       </div>
     </div>
   );
