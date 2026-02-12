@@ -19,31 +19,54 @@ const CreateAdminModal = ({ onClose, onCreated }: Props) => {
     setLoading(true);
 
     if (!email) {
-      setError("Debes ingresar un email");
+      setError("Debes ingresar un email válido");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await supabase.functions.invoke("create-admin-user", {
-        body: {
-          email,
-          role,
-        },
-      });
+      const { data: sessionData } = await supabase.auth.getSession();
 
-      setLoading(false);
-
-      if (response.error) {
-        setError(response.error.message);
+      if (!sessionData.session) {
+        setError("No hay sesión activa. Inicia sesión nuevamente.");
+        setLoading(false);
         return;
       }
 
-      // Si todo salió bien
+      const token = sessionData.session.access_token;
+
+      const res = await fetch(
+        "https://amqfvzcltdyradkuxkjw.supabase.co/functions/v1/create-admin-user",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            email,
+            role,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      setLoading(false);
+
+      console.log("Respuesta completa:", res.status, data);
+
+      if (!res.ok) {
+        setError(data.error || "Error al crear administrador");
+        return;
+      }
+
       onCreated();
       onClose();
 
     } catch (err: any) {
+      console.error("Error inesperado:", err);
       setLoading(false);
       setError(err.message || "Error inesperado al crear administrador");
     }

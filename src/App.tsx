@@ -13,6 +13,7 @@ import AdminUsers from "./pages/AdminUsers";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
 import { AuthProvider } from "./context/AuthContext";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             {/* Rutas públicas */}
             <Route path="/" element={<Index />} />
             <Route path="/producto/:id" element={<ProductDetail />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Rutas admin */}
             <Route
