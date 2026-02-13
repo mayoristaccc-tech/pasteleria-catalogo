@@ -14,7 +14,7 @@ const ForgotPassword = () => {
     setLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://dolcce-vitta-mas.vercel.app/reset-password",
+      redirectTo: window.location.origin + "/reset-password",
     });
 
     setLoading(false);

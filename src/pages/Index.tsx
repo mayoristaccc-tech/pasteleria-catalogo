@@ -1,27 +1,14 @@
 import { useState } from "react";
-import { Plus, LogOut, Info, User } from "lucide-react";
-
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import ProductCard from "../components/ProductCard";
-import ProductForm from "../components/ProductForm";
-import EmptyState from "../components/EmptyState";
-import AboutUsModal from "../components/AboutUsModal";
-import WhatsAppButton from "../components/WhatsAppButton";
-import LoginModal from "../components/LoginModal";
-
-import { Button } from "../components/ui/button";
-
-import { useProducts } from "../hooks/useProducts";
-import { useAuthContext } from "../context/AuthContext";
-import { useAboutUs } from "../hooks/useAboutUs";
-import { useSiteConfig } from "../hooks/useSiteConfig";
-
-import { Product } from "../types/product";
+import { useAuthContext } from "@/context/AuthContext";
+import { useProducts } from "@/hooks/useProducts";
+import { Product } from "@/types/product";
+import ProductCard from "@/components/ProductCard";
+import ProductForm from "@/components/ProductForm";
+import LoginModal from "@/components/LoginModal";
 
 const Index = () => {
-
-  const { isAuthenticated, logout, loading: authLoading } = useAuthContext();
+  const { isAuthenticated, logout, loading: authLoading } =
+    useAuthContext();
 
   const {
     productos,
@@ -29,181 +16,198 @@ const Index = () => {
     agregarProducto,
     editarProducto,
     eliminarProducto,
+    eliminarImagenProducto,
   } = useProducts();
+
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [productoEditando, setProductoEditando] =
+    useState<Product | null>(null);
+  const [mostrarLogin, setMostrarLogin] = useState(false);
+  const [productoSeleccionado, setProductoSeleccionado] =
+    useState<Product | null>(null);
 
   const [busqueda, setBusqueda] = useState("");
   const [orden, setOrden] = useState<"desc" | "asc">("desc");
 
   const productosFiltrados = productos
     .filter((producto) => {
-      const texto = `${producto.nombre} ${producto.descripcion}`.toLowerCase();
+      const texto =
+        `${producto.nombre ?? ""} ${producto.descripcion ?? ""}`.toLowerCase();
       return texto.includes(busqueda.toLowerCase());
     })
     .sort((a, b) => {
       const fechaA = new Date(a.creado_en || "").getTime();
       const fechaB = new Date(b.creado_en || "").getTime();
-
       return orden === "desc" ? fechaB - fechaA : fechaA - fechaB;
     });
-
-  const { aboutText, guardarAboutText } = useAboutUs();
-
-  const {
-    logoUrl,
-    coverUrl,
-    logoPosition,
-    actualizarLogo,
-    actualizarLogoPosition,
-    resetearLogoPosition,
-    actualizarCover,
-  } = useSiteConfig();
-
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [productoEditando, setProductoEditando] = useState<Product | null>(null);
-  const [mostrarAboutUs, setMostrarAboutUs] = useState(false);
-  const [mostrarLogin, setMostrarLogin] = useState(false);
 
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="container mx-auto px-4 py-10">
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h2 className="text-3xl font-bold">Nuestros Productos</h2>
 
-      {isAuthenticated && (
-        <div className="sticky top-0 z-40 bg-accent/90 px-4 py-2 text-center shadow-soft backdrop-blur-sm">
-          <div className="container flex items-center justify-center gap-2">
-            <User className="h-4 w-4 text-accent-foreground" />
-            <span className="text-sm font-medium text-accent-foreground">
-              Administrador conectado
-            </span>
-          </div>
-        </div>
-      )}
+        <div className="flex flex-wrap items-center gap-3">
 
-      <Header
-        modoCreador={isAuthenticated}
-        logoUrl={logoUrl}
-        coverUrl={coverUrl}
-        logoPosition={logoPosition}
-        onLogoChange={actualizarLogo}
-        onCoverChange={actualizarCover}
-        onLogoPositionChange={actualizarLogoPosition}
-        onLogoPositionReset={resetearLogoPosition}
-      />
-
-      <main className="container flex-1 py-8">
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-
-          <h2 className="font-display text-2xl font-semibold text-foreground">
-            Nuestros Productos
-          </h2>
-
+          {/* Buscador */}
           <input
             type="text"
-            placeholder="Buscar productos..."
+            placeholder="Buscar producto..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="border rounded-lg px-3 py-2 w-full md:w-64"
+            className="rounded-lg border px-3 py-2"
           />
 
+          {/* Orden */}
           <select
             value={orden}
-            onChange={(e) => setOrden(e.target.value as "asc" | "desc")}
-            className="border rounded-lg px-3 py-2 w-full md:w-48"
+            onChange={(e) =>
+              setOrden(e.target.value as "asc" | "desc")
+            }
+            className="rounded-lg border px-3 py-2"
           >
-            <option value="desc">Más recientes primero</option>
-            <option value="asc">Más antiguos primero</option>
+            <option value="desc">Más nuevos</option>
+            <option value="asc">Más antiguos</option>
           </select>
 
-          <div className="flex flex-wrap gap-3">
+          {/* Siempre visible */}
+          <button
+            onClick={() => (window.location.href = "/sobre-nosotros")}
+            className="rounded-lg border px-4 py-2"
+          >
+            Sobre Nosotros
+          </button>
 
-            <Button
-              variant="outline"
-              onClick={() => setMostrarAboutUs(true)}
-              className="gap-2"
+          {/* Admin si NO autenticado */}
+          {!isAuthenticated && (
+            <button
+              onClick={() => setMostrarLogin(true)}
+              className="rounded-lg border px-4 py-2"
             >
-              <Info className="h-4 w-4" />
-              Sobre Nosotros
-            </Button>
+              Admin
+            </button>
+          )}
 
-            {isAuthenticated ? (
-              <>
-                <Button onClick={() => setMostrarFormulario(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Agregar Producto
-                </Button>
-
-                <Button variant="outline" onClick={logout} className="gap-2">
-                  <LogOut className="h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => setMostrarLogin(true)}
-                className="gap-2"
+          {/* Botones si autenticado */}
+          {isAuthenticated && (
+            <>
+              <button
+                onClick={() => {
+                  setProductoEditando(null);
+                  setMostrarFormulario(true);
+                }}
+                className="rounded-lg bg-primary px-4 py-2 text-white"
               >
-                <User className="h-4 w-4" />
-                Iniciar Sesión
-              </Button>
-            )}
-          </div>
+                + Nuevo
+              </button>
+
+              <button
+                onClick={logout}
+                className="rounded-lg bg-destructive px-4 py-2 text-white"
+              >
+                Salir
+              </button>
+            </>
+          )}
         </div>
+      </div>
 
-        {cargando ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-        ) : productos.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {productosFiltrados.map((producto) => (
-              <ProductCard
-                key={producto.id}
-                producto={producto}
-                modoCreador={isAuthenticated}
-                onEdit={() => setProductoEditando(producto)}
-                onDelete={eliminarProducto}
-              />
-            ))}
-          </div>
-        )}
-      </main>
-
-      <Footer />
-      <WhatsAppButton />
-
-      {/* MODALES */}
+      {/* Modal Login */}
       {mostrarLogin && (
-        <LoginModal
-          onClose={() => setMostrarLogin(false)}
-        />
+        <LoginModal onClose={() => setMostrarLogin(false)} />
       )}
 
+      {/* Formulario producto */}
       {mostrarFormulario && (
         <ProductForm
           onSubmit={agregarProducto}
-          onClose={() => setMostrarFormulario(false)}
-          productoEditar={productoEditando || undefined}
           onUpdate={editarProducto}
+          productoEditar={productoEditando || undefined}
+          onClose={() => setMostrarFormulario(false)}
         />
       )}
 
-      <AboutUsModal
-        isOpen={mostrarAboutUs}
-        onClose={() => setMostrarAboutUs(false)}
-        aboutText={aboutText}
-        onSave={guardarAboutText}
-        modoCreador={isAuthenticated}
-      />
+      {/* Modal flotante del producto */}
+      {productoSeleccionado && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-xl relative">
 
+            <button
+              onClick={() => setProductoSeleccionado(null)}
+              className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 text-sm shadow"
+            >
+              ✕
+            </button>
+
+            {productoSeleccionado.imagen_url && (
+              <img
+                src={productoSeleccionado.imagen_url}
+                alt={productoSeleccionado.nombre}
+                className="w-full h-80 object-cover"
+              />
+            )}
+
+            <div className="p-6">
+              <h3 className="text-2xl font-semibold">
+                {productoSeleccionado.nombre}
+              </h3>
+
+              {productoSeleccionado.descripcion && (
+                <p className="mt-3 text-gray-600 whitespace-pre-line">
+                  {productoSeleccionado.descripcion}
+                </p>
+              )}
+
+              <button
+                onClick={() => {
+                  const mensaje = encodeURIComponent(
+                    `Hola! Quiero comprar este producto:\n\n🧁 ${productoSeleccionado.nombre}\n${productoSeleccionado.descripcion ?? ""}`
+                  );
+
+                  window.open(
+                    `https://api.whatsapp.com/send?phone=541153790146&text=${mensaje}`,
+                    "_blank"
+                  );
+                }}
+                className="mt-6 w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition"
+              >
+                Quiero comprar este producto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Productos */}
+      {cargando ? (
+        <p>Cargando productos...</p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+          {productosFiltrados.map((producto) => (
+            <ProductCard
+              key={producto.id}
+              producto={producto}
+              modoCreador={isAuthenticated}
+              onEdit={(producto) => {
+                setProductoEditando(producto);
+                setMostrarFormulario(true);
+              }}
+              onDelete={eliminarProducto}
+              onDeleteImage={eliminarImagenProducto}
+              onClickImage={(producto) =>
+                setProductoSeleccionado(producto)
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -7,68 +7,49 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const sessionResponse = await supabase.auth.getSession();
-        const sessionUser = sessionResponse.data.session?.user ?? null;
-
-        setUser(sessionUser);
-
-        
-        setLoading(false);
-
-        if (!sessionUser) {
-          setRole(null);
-          return;
-        }
-
-        
-        cargarRol(sessionUser.id);
-
-      } catch (err) {
-        console.error("Error cargando sesión:", err);
-        setUser(null);
-        setRole(null);
-        setLoading(false);
-      }
-    };
-
     const cargarRol = async (userId: string) => {
       try {
-        const profileResponse = await supabase
+        const { data } = await supabase
           .from("admin_profiles")
           .select("role")
           .eq("id", userId)
           .maybeSingle();
 
-        setRole(profileResponse.data?.role ?? null);
+        setRole(data?.role ?? null);
       } catch (err) {
         console.error("Error cargando rol:", err);
         setRole(null);
       }
     };
 
-    init();
+    const handleSession = async (session: any) => {
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const sessionUser = session?.user ?? null;
-        setUser(sessionUser);
-
-       
+      if (!sessionUser) {
+        setRole(null);
         setLoading(false);
-
-        if (!sessionUser) {
-          setRole(null);
-          return;
-        }
-
-        cargarRol(sessionUser.id);
+        return;
       }
-    );
+
+      await cargarRol(sessionUser.id);
+      setLoading(false);
+    };
+
+    
+    supabase.auth.getSession().then(({ data }) => {
+      handleSession(data.session);
+    });
+
+    
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleSession(session);
+    });
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
@@ -80,7 +61,6 @@ export const useAuth = () => {
     await supabase.auth.signOut();
     setUser(null);
     setRole(null);
-    setLoading(false);
   };
 
   return {

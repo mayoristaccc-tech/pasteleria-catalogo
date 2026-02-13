@@ -4,62 +4,104 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ProductDetail from "./pages/ProductDetail";
+import MainLayout from "@/layouts/MainLayout";
 
-import AdminLayout from "./pages/AdminLayout";
-import AdminUsers from "./pages/AdminUsers";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import AdminLayout from "@/pages/AdminLayout";
+import AdminUsers from "@/pages/AdminUsers";
+import ResetPassword from "@/pages/ResetPassword";
+import ForgotPassword from "@/pages/ForgotPassword";
 
-import { AuthProvider } from "./context/AuthContext";
-import ResetPassword from "./pages/ResetPassword";
-import ForgotPassword from "./pages/ForgotPassword";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
+import SobreNosotros from "@/pages/SobreNosotros";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-
       <AuthProvider>
-
         <Toaster />
         <Sonner />
 
         <BrowserRouter>
           <Routes>
 
-            {/* Rutas públicas */}
-            <Route path="/" element={<Index />} />
-            <Route path="/producto/:id" element={<ProductDetail />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            {/* Rutas públicas con Layout */}
+            <Route
+              path="/"
+              element={
+                <MainLayout>
+                  <Index />
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/sobre-nosotros"
+              element={
+                <MainLayout>
+                <SobreNosotros />
+                </MainLayout>
+              }
+            />
+
+            <Route
+              path="/producto/:id"
+              element={
+                <MainLayout>
+                  <Index />
+                </MainLayout>
+              }
+            />
+
+            <Route
+              path="/forgot-password"
+              element={
+                <MainLayout>
+                  <ForgotPassword />
+                </MainLayout>
+              }
+            />
+
+            <Route
+              path="/reset-password"
+              element={
+                <MainLayout>
+                  <ResetPassword />
+                </MainLayout>
+              }
+            />
 
             {/* Rutas admin */}
             <Route
-            path="/admin"
-          element={
-          <ProtectedRoute>
-      <AdminLayout />
-    </ProtectedRoute>
-  }
->
-  <Route
-    path="usuarios"
-    element={<AdminUsers />}
-  />
-</Route>
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                path="usuarios"
+                element={<AdminUsers />}
+              />
+            </Route>
 
-
-            {/* Ruta 404 */}
-            <Route path="*" element={<NotFound />} />
+            {/* 404 */}
+            <Route
+              path="*"
+              element={
+                <MainLayout>
+                  <NotFound />
+                </MainLayout>
+              }
+            />
 
           </Routes>
         </BrowserRouter>
-
       </AuthProvider>
-
     </TooltipProvider>
   </QueryClientProvider>
 );

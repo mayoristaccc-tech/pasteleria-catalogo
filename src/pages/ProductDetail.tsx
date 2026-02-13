@@ -1,88 +1,104 @@
-import { useParams } from "react-router-dom";
-import { useProducts } from "@/hooks/useProducts";
-import { MessageCircle, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { Product } from "@/types/product";
+import { ArrowLeft } from "lucide-react";
 
 const ProductDetail = () => {
-    const { id } = useParams();
-    const { productos } = useProducts();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const producto = productos.find((p) => p.id === id);
+  const [producto, setProducto] = useState<Product | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [imagenError, setImagenError] = useState(false);
 
-    if (!producto) {
-        return (
-            <div className="p-6 text-center">
-                <p>Producto no encontrado</p>
-                <Link to="/">
-                    <Button className="mt-4">Volver al catálogo</Button>
-                </Link>
-            </div>
-        );
-    }
+  useEffect(() => {
+    const cargarProducto = async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-    const consultarPorWhatsApp = () => {
-        const TU_NUMERO = "541153790146";
-
-        const enlaceProducto = `${window.location.origin}/producto/${producto.id}`;
-
-        const mensajePlano = [
-            "Hola! Quiero consultar por este producto:",
-            "",
-            `🧁 ${producto.nombre}`,
-            "",
-            "Ver producto:",
-            enlaceProducto,
-            "",
-            "¿Podrían darme más información?"
-        ].join("\n");
-
-        const mensajeCodificado = encodeURIComponent(mensajePlano);
-
-        const url = `https://api.whatsapp.com/send?phone=${TU_NUMERO}&text=${mensajeCodificado}`;
-
-        window.open(url, "_blank");
+      setProducto(data);
+      setCargando(false);
     };
 
+    if (id) cargarProducto();
+  }, [id]);
+
+  if (cargando) {
     return (
-        <div className="container mx-auto p-6">
-            <div className="max-w-xl mx-auto bg-card rounded-xl shadow p-6">
-                <img
-                    src={producto.imagen_url}
-                    alt={producto.nombre}
-                    className="w-full rounded-lg mb-4"
-                />
-
-                <h2 className="text-2xl font-semibold mb-2">
-                    {producto.nombre}
-                </h2>
-
-                <p className="text-muted-foreground mb-6">
-                    {producto.descripcion}
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                        onClick={consultarPorWhatsApp}
-                        className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
-                    >
-                        <MessageCircle className="h-5 w-5" />
-                        Consultar por WhatsApp
-                    </Button>
-
-                    <Link to="/" className="flex-1">
-                        <Button
-                            variant="outline"
-                            className="w-full flex items-center justify-center gap-2"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                            Volver al catálogo
-                        </Button>
-                    </Link>
-                </div>
-            </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Cargando producto...</p>
+      </div>
     );
+  }
+
+  if (!producto) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Producto no encontrado</p>
+      </div>
+    );
+  }
+
+  const TU_NUMERO = "541153790146";
+
+  const mensaje = encodeURIComponent(
+    `Hola! Quiero pedir este producto:\n\n🧁 ${producto.nombre}\n${
+      producto.descripcion || ""
+    }\n\n${window.location.href}`
+  );
+
+  return (
+    <div className="container mx-auto px-4 py-10">
+      <button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver
+      </button>
+
+      <div className="grid gap-10 md:grid-cols-2">
+        <div className="overflow-hidden rounded-2xl shadow-soft">
+          <img
+            src={
+              imagenError || !producto.imagen_url
+                ? "/placeholder.png"
+                : producto.imagen_url
+            }
+            alt={producto.nombre}
+            onError={() => setImagenError(true)}
+            className="w-full object-cover"
+          />
+        </div>
+
+        <div className="flex flex-col justify-center">
+          <h1 className="text-3xl font-bold">{producto.nombre}</h1>
+
+          {producto.descripcion && (
+            <p className="mt-4 text-muted-foreground text-lg">
+              {producto.descripcion}
+            </p>
+          )}
+
+          <button
+            onClick={() =>
+              window.open(
+                `https://api.whatsapp.com/send?phone=${TU_NUMERO}&text=${mensaje}`,
+                "_blank"
+              )
+            }
+            className="mt-8 w-full rounded-xl bg-green-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-green-700"
+          >
+            💬 Quiero comprar este producto
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default ProductDetail;

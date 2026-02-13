@@ -13,21 +13,29 @@ const ResetPassword = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const processCode = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
 
-    if (!code) {
-      setError("El enlace es inválido o expiró.");
-      setLoading(false);
-      return;
-    }
-
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        setError("El enlace ya fue utilizado o expiró.");
+      if (!code) {
+        setError("El enlace es inválido o expiró.");
+        setLoading(false);
+        return;
       }
+
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error(error);
+        setError("El enlace ya fue utilizado o expiró.");
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-    });
+    };
+
+    processCode();
   }, []);
 
   const guardar = async () => {
@@ -51,6 +59,7 @@ const ResetPassword = () => {
     }
 
     await supabase.auth.signOut();
+
     alert("Contraseña creada correctamente. Ahora podés iniciar sesión.");
     navigate("/");
   };
